@@ -4,7 +4,7 @@
  * User: ivariable
  * Date: 06.03.11
  * Time: 17:08
- * To change this template use File | Settings | File Templates.
+ *
  */
 class BitrixGem_FlashMessage extends BaseBitrixGem {
 
@@ -12,13 +12,13 @@ class BitrixGem_FlashMessage extends BaseBitrixGem {
 		'TYPE'			=> 'functional',
 		'GEM'			=> 'FlashMessage',
 		'AUTHOR'		=> 'Александр Клименков',
-		'AUTHOR_LINK'	=> 'http://klimenkov-aleksandr2.moikrug.ru/',
-		'DATE'			=> '06.03.2011',
-		'VERSION'		=> '0.1',
+		'AUTHOR_LINK'	=> 'https://github.com/anyx',
+		'DATE'			=> '09.10.2012',
+		'VERSION'		=> '0.2',
 		'NAME' 			=> 'FlashMessage',
 		'DESCRIPTION' 	=> "Создание/управление/отображение флеш-сообщений в публичной и административной частях сайта (сообщения, которые должны отобразиться пользователю только один раз, например \"Модуль успешно установлен\", \"Форма успешно заполнена и отправлена и т.п.\".) В состав гема входит компонент для отображения сообщений в публичной части сайта.",
 		'DESCRIPTION_FULL' => '',
-		'CHANGELOG'		=> 'Релиз',
+		'CHANGELOG'		=> 'Рефакторинг',
 		'REQUIRED_MIN_MODULE_VERSION' => '1.2.0',
 	);
 
@@ -26,22 +26,24 @@ class BitrixGem_FlashMessage extends BaseBitrixGem {
 		'ADMIN' 	=> array(),
 		'PUBLIC' 	=> array(),
 	);
+
 	const SESSION_CONTAINER_NAME = 'BitrixGem_FlashMessage_MESSAGES';
 
-
-	public function event_main_OnProlog_setMessager(){
-		if( defined('ADMIN_SECTION') ){
-			global $adminChain;
-			$adminChain = new CiVFlashMessageGem_AdminChain_Decorator( $adminChain, $this );
-			if( isset($_GET['testMe']) ){
-				BG_AddFlashMessage('Привет мир! Удачный тест!');
-				BG_AddFlashMessage('Пока мир! НЕ удачный тест!', 'ERROR');
-			}
+	/**
+	 *
+	 */
+	public function event_main_OnProlog_initMessages() {
+		if ( !empty($_SESSION[ self::SESSION_CONTAINER_NAME ]) && is_array($_SESSION[ self::SESSION_CONTAINER_NAME ]) ) {
+			$this->aMessages = $_SESSION[ self::SESSION_CONTAINER_NAME ];
 		}
+		$_SESSION[ self::SESSION_CONTAINER_NAME ] = array();
 	}
 
-	public function event_main_OnAfterEpilog_saveMessages(){
-		$_SESSION[ self::SESSION_CONTAINER_NAME ] = $this->aMessages;
+	public function event_main_OnProlog_setMessager() {
+		if( defined('ADMIN_SECTION') ) {
+			global $adminChain;
+			$adminChain = new CiVFlashMessageGem_AdminChain_Decorator( $adminChain, $this );
+		}
 	}
 
 	public function installGem(){
@@ -53,8 +55,9 @@ class BitrixGem_FlashMessage extends BaseBitrixGem {
 		DeleteDirFilesEx( "/bitrix/components/bitrixgems/flashmessage/" );
 		return parent::unInstallGem();
 	}
+
 	/**
-	 * @param  $sMessage
+	 * @param $sMessage
 	 * @param string $sType ERROR|OK
 	 * @param string $sAdmin ADMIN|PUBLIC|ALL
 	 * @return void
@@ -65,6 +68,8 @@ class BitrixGem_FlashMessage extends BaseBitrixGem {
 			'area'		=> $sArea,
 			'type'		=> $sType,
 		);
+
+		$_SESSION[ self::SESSION_CONTAINER_NAME ] = $this->aMessages;
 	}
 
 	public function getFlashQueue(){
@@ -76,9 +81,8 @@ class BitrixGem_FlashMessage extends BaseBitrixGem {
 	}
 	
 	public function getFlash( $sArea = 'ADMIN' ){
-		return $_SESSION[ self::SESSION_CONTAINER_NAME ][ $sArea ];
+		return $this->aMessages[ $sArea ];
 	}
-
 }
 
 
